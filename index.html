@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Leaflet debug page</title>
+    <meta charset="utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7/leaflet.css" />
+    <script src="http://cdn.leafletjs.com/leaflet-0.7/leaflet.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="screen.css" />
+
+    <link rel="stylesheet" href="./dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="./dist/MarkerCluster.Default.css" />
+    <script src="./dist/leaflet.markercluster-src.js"></script>
+
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!--moment-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.min.js"></script>
+
+    <!--bootstrap-datepicker-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
+
+
+
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="box effect6 col-sm-12">
+                <!--map cpntrol panel-->
+                <div id="map-panel">
+                    <form class="form-inline">
+
+                        <div class="col-sm-3">
+                        <div class="checkbox">
+                            <label>
+                            <input type="checkbox">All patients
+                            </label>
+                        </div>
+                        </div>                        
+                        <div class='col-sm-3'>
+                            <div class="form-group">
+                                <div class='input-group date' id='datepickerfrom'>
+                                    <input type='text' class="form-control" />
+                                    <span class="input-group-addon">
+                                         <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class='col-sm-3'>
+                            <div class="form-group">
+                                <div class='input-group date' id='datepickerto'>
+                                    <input type='text' class="form-control" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="col-sm-2">
+                                <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <!--map body-->
+                <div id="map">
+                    <div id="progress">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var progress = document.getElementById('progress');
+		var progressBar = document.getElementById('progress-bar');
+        var addressPoints = {};
+		var markers = L.markerClusterGroup({ chunkedLoading: true, chunkProgress: updateProgressBar });
+		var markerList = [];//geodata  
+    
+		var patients = new L.LayerGroup();
+
+        $.ajax({
+            url: 'https://raw.githubusercontent.com/kenkaohy/json/master/PATIENT_GEO.json',
+            type: 'GET',
+            dataType: 'json',
+            data: {format: 'json'},
+            success: function(geodata) {
+                addressPoints = geodata;
+                //console.log(geodata.length);
+            }
+        }).done(function(){
+            var len = addressPoints.length;
+            for (var i = 0; i < len; i++) {
+                    var a = addressPoints[i];
+                    var title = a['ADMITDATE'];
+                    var marker = L.marker(L.latLng(a['latitude'], a['longitude']), { title: title });
+                    marker.bindPopup(title);
+                    markerList.push(marker);
+		      }
+            markers.addLayers(markerList);
+		    //map.addLayer(markers); 
+              
+        });
+            
+        //Map type
+		var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
+        }),latlng = L.latLng(43.7104876,-79.5032786);
+        var Esri_WorldStreetMap = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+        }),latlng = L.latLng(43.7104876,-79.5032786);        
+        var grayscale = L.tileLayer('http://korona.geog.uni-heidelberg.de/tiles/roadsg/x={x}&y={y}&z={z}', {
+            attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group @ University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }),latlng = L.latLng(43.7104876,-79.5032786);
+                                        
+        //base layer objs
+        var baseMaps = {
+            "Grayscale": grayscale,
+            "Esri": Esri_WorldStreetMap,
+            "OSM": osm
+        };
+        //over layer objs
+		var overlayMaps = {
+			"Markers": markers
+		};
+        //intial map
+		var map = L.map('map', { 
+            center: latlng, 
+            minZoom: 6,
+            maxZoom: 14,
+            zoom: 11, 
+            layers: [osm, markers]
+        });        
+        //Create layer control       
+        L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+
+            
+		function updateProgressBar(processed, total, elapsed, layersArray) {
+			if (elapsed > 1000) {
+				// if it takes more than a second to load, display the progress bar:
+				progress.style.display = 'block';
+				progressBar.style.width = Math.round(processed/total*100) + '%';
+			}
+			if (processed === total) {
+				// all markers processed - hide the progress bar:
+				progress.style.display = 'none';
+			}
+		}
+        
+        //datepicker
+    
+        $(function () {
+                $('#datepickerfrom').datetimepicker({
+                    format: 'MM/DD/YYYY'
+                });
+                $('#datepickerto').datetimepicker({
+                    format: 'MM/DD/YYYY',
+                    useCurrent: false //Important! See issue #1075
+                });
+                $("#datepickerfrom").on("dp.change", function (e) {
+                    $('#datepickerto').data("DateTimePicker").minDate(e.date);
+                });
+                $("#datepickerto").on("dp.change", function (e) {
+                    $('#datepickerfrom').data("DateTimePicker").maxDate(e.date);
+                });
+            });
+    </script>
+</body>
+
+</html>
