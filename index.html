@@ -32,42 +32,39 @@
             <div class="box effect6 col-sm-12">
                 <!--map cpntrol panel-->
                 <div id="map-panel">
-                    <form class="form-inline">
-
-                        <div class="col-sm-3">
-                        <div class="checkbox">
-                            <label>
-                            <input type="checkbox">All patients
-                            </label>
-                        </div>
-                        </div>                        
-                        <div class='col-sm-3'>
+                    
+                    <div class="center-block">
+                    <form class="form-inline" role="form">
+                            <div class="form-group ">
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" checked="checked" id="cb1">&#32;All patients
+                                    </label>
+                                </div>
+                            </div>
                             <div class="form-group">
-                                <div class='input-group date' id='datepickerfrom'>
-                                    <input type='text' class="form-control" />
+                                <div class='input-group date'>
+                                    <input type='text' class="form-control" id='datepickerfrom' placeholder="Admin date from" />
                                     <span class="input-group-addon">
                                          <span class="glyphicon glyphicon-calendar"></span>
                                     </span>
                                 </div>
                             </div>
-                        </div>
-                        <div class='col-sm-3'>
                             <div class="form-group">
-                                <div class='input-group date' id='datepickerto'>
-                                    <input type='text' class="form-control" />
+                                <div class='input-group date'>
+                                    <input type='text' class="form-control" id='datepickerto' placeholder="Admin date to" />
                                     <span class="input-group-addon">
                                         <span class="glyphicon glyphicon-calendar"></span>
                                     </span>
                                 </div>
                             </div>
+                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
                         </div>
-
+                        
                         <div class="form-group">
-                            <div class="col-sm-2">
-                                <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                            </div>
-                        </div>
                     </form>
+                    <!--end form-->
+                    </div>
                 </div>
                 <!--map body-->
                 <div id="map">
@@ -159,7 +156,6 @@
 		}
         
         //datepicker
-    
         $(function () {
                 $('#datepickerfrom').datetimepicker({
                     format: 'MM/DD/YYYY'
@@ -175,6 +171,23 @@
                     $('#datepickerfrom').data("DateTimePicker").maxDate(e.date);
                 });
             });
+        
+        //search input constrain
+        $(document).ready(function()
+        {
+            //uncheck the checkbox when the date been selected
+            $('#datepickerfrom, #datepickerto').blur(function(e) {
+                if ( $(this).val() != "" ){
+                  $('#cb1').prop('checked', $(this).prop("checked"));
+                }
+            });
+            //clear datapickers when box checked          
+            $('#cb1').on('click', function(e) {
+                if ( $('#cb1').is( ":checked" ) ){
+                    $('#datepickerfrom, #datepickerto').val('');
+                }
+            });
+        });
     </script>
 </body>
 
