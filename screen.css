@@ -29,6 +29,12 @@
   margin-left: auto;
   margin-right: 10px;
 }
+.margin-left {
+
+  margin-left: 10px;
+
+}
+  
 #progress {
     display: none;
     position: absolute;
@@ -53,12 +59,12 @@
 }
 
 
-.box h3{
+.mapbox h3{
   text-align:center;
     position:relative;
     top:80px;
 }
-.box {
+.mapbox {
     width:100%;
     height:600px;
     background:#FFF;

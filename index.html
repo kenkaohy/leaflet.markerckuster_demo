@@ -23,19 +23,20 @@
     <!--bootstrap-datepicker-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
-
+    <!--leaflet.featuregroup.subgroup-->
+    <!--<script src="https://raw.githubusercontent.com/ghybs/Leaflet.FeatureGroup.SubGroup/master/leaflet.featuregroup.subgroup-src.js"></script>-->
+    
 </head>
 
 <body>
     <div class="container">
         <div class="row">
-            <div class="box effect6 col-sm-12">
+            <div class="mapbox effect6 col-xs-12">
                 <!--map cpntrol panel-->
                 <div id="map-panel">
-                    
                     <div class="center-block">
                     <form class="form-inline" role="form">
-                            <div class="form-group ">
+                            <div class="form-group   margin-left">
                                 <div class="checkbox">
                                     <label>
                                         <input type="checkbox" checked="checked" id="cb1">&#32;All patients
@@ -59,12 +60,9 @@
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                            </form>
                         </div>
-                        
-                        <div class="form-group">
-                    </form>
-                    <!--end form-->
-                    </div>
+
                 </div>
                 <!--map body-->
                 <div id="map">
@@ -78,22 +76,26 @@
     </div>
 
     <script type="text/javascript">
+    
         var progress = document.getElementById('progress');
 		var progressBar = document.getElementById('progress-bar');
         var addressPoints = {};
 		var markers = L.markerClusterGroup({ chunkedLoading: true, chunkProgress: updateProgressBar });
 		var markerList = [];//geodata  
-    
-		var patients = new L.LayerGroup();
-
+        
+	   var parent = L.featureGroup();
+           //groupIn = L.featureGroup.subGroup(parent),
+		   //groupOut = L.featureGroup.subGroup(parent);
+              
         $.ajax({
             url: 'https://raw.githubusercontent.com/kenkaohy/json/master/PATIENT_GEO.json',
+            //url: '@Url.HttpRouteUrl("API Default", new { httproute = "", controller = "PATIENT_GEO", action = "GetCoordinates" })/',
             type: 'GET',
             dataType: 'json',
             data: {format: 'json'},
             success: function(geodata) {
                 addressPoints = geodata;
-                //console.log(geodata.length);
+                console.log(geodata);
             }
         }).done(function(){
             var len = addressPoints.length;
@@ -141,8 +143,7 @@
         //Create layer control       
         L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-
-            
+        //progress bar
 		function updateProgressBar(processed, total, elapsed, layersArray) {
 			if (elapsed > 1000) {
 				// if it takes more than a second to load, display the progress bar:
