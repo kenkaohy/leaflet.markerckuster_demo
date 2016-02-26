@@ -1,1 +1,2 @@
-# leaflet.markerckuster_demo
+# Leaflet Markercluster
+Using the Leaflet Markercluster plugin
