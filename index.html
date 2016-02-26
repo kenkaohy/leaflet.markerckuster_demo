@@ -20,12 +20,16 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <!--moment-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.min.js"></script>
-    <!--bootstrap-datepicker-->
+    <!--bootstrap-datetimepicker-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
-    <!--leaflet.featuregroup.subgroup-->
-    <!--<script src="https://raw.githubusercontent.com/ghybs/Leaflet.FeatureGroup.SubGroup/master/leaflet.featuregroup.subgroup-src.js"></script>-->
-    
+    <!--bootstrap-datepicker-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.0/css/bootstrap-datepicker.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.0/js/bootstrap-datepicker.min.js"></script>
+  
+
+
+
 </head>
 
 <body>
@@ -34,34 +38,26 @@
             <div class="mapbox effect6 col-xs-12">
                 <!--map cpntrol panel-->
                 <div id="map-panel">
-                    <div class="center-block">
-                    <form class="form-inline" role="form">
-                            <div class="form-group   margin-left">
-                                <div class="checkbox">
-                                    <label>
-                                        <input type="checkbox" checked="checked" id="cb1">&#32;All patients
-                                    </label>
+                    <div class="center-block">                        
+                      <form class="form-inline" role="form">
+
+                            <div class="form-group margin-left">
+                                <select class="form-control" id='opts'>
+                                <option selected value="all">All Patients</option>
+                                <option value="dis">Discharge in</option>
+                                </select>                            
+                            </div>                            
+                             
+                                <div class="input-group input-daterange" id="daterange">
+                                    <input type="text" class="form-control" id='datepickerfrom' placeholder="Admin date from">
+                                    <span class="input-group-addon">to</span>
+                                    <input type="text" class="form-control" id='datepickerto' placeholder="Admin date to">
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <div class='input-group date'>
-                                    <input type='text' class="form-control" id='datepickerfrom' placeholder="Admin date from" />
-                                    <span class="input-group-addon">
-                                         <span class="glyphicon glyphicon-calendar"></span>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <div class='input-group date'>
-                                    <input type='text' class="form-control" id='datepickerto' placeholder="Admin date to" />
-                                    <span class="input-group-addon">
-                                        <span class="glyphicon glyphicon-calendar"></span>
-                                    </span>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                            </form>
-                        </div>
+                                
+                            <!--<button type="submit" class="btn btn-primary btn-sm">Search</button>-->
+                            <button type="button" class="btn btn-primary btn-sm" id='btnfilter'>Refine</button>
+                        </form>
+                    </div>
 
                 </div>
                 <!--map body-->
@@ -76,17 +72,15 @@
     </div>
 
     <script type="text/javascript">
-    
         var progress = document.getElementById('progress');
 		var progressBar = document.getElementById('progress-bar');
         var addressPoints = {};
 		var markers = L.markerClusterGroup({ chunkedLoading: true, chunkProgress: updateProgressBar });
-		var markerList = [];//geodata  
-        
-	   var parent = L.featureGroup();
-           //groupIn = L.featureGroup.subGroup(parent),
-		   //groupOut = L.featureGroup.subGroup(parent);
-              
+		var markerList= [];//geodata  
+        var filterList= [];//geodata
+        var disList= [];//geodata  
+        var from, to;
+   
         $.ajax({
             url: 'https://raw.githubusercontent.com/kenkaohy/json/master/PATIENT_GEO.json',
             //url: '@Url.HttpRouteUrl("API Default", new { httproute = "", controller = "PATIENT_GEO", action = "GetCoordinates" })/',
@@ -95,23 +89,29 @@
             data: {format: 'json'},
             success: function(geodata) {
                 addressPoints = geodata;
-                console.log(geodata);
+                //console.log(addressPoints);
             }
         }).done(function(){
             var len = addressPoints.length;
-            for (var i = 0; i < len; i++) {
+            for ( i = 0; i < len; i++) {
                     var a = addressPoints[i];
                     var title = a['ADMITDATE'];
+                    var status = a['STATUS']
                     var marker = L.marker(L.latLng(a['latitude'], a['longitude']), { title: title });
                     marker.bindPopup(title);
                     markerList.push(marker);
-		      }
-            markers.addLayers(markerList);
-		    //map.addLayer(markers); 
-              
+                    //create sub list filter by status
+                    if (status == 'DIS IN'){
+                        var dis = L.marker(L.latLng(a['latitude'], a['longitude']), { title: title });
+                        dis.bindPopup(title);
+                        disList.push(dis);                        
+                    }
+		      }  
+            markers.addLayers(markerList);         
+		    //map.addLayer(markers);
         });
             
-        //Map type
+        //initial map layers
 		var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
         }),latlng = L.latLng(43.7104876,-79.5032786);
@@ -119,20 +119,20 @@
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
         }),latlng = L.latLng(43.7104876,-79.5032786);        
         var grayscale = L.tileLayer('http://korona.geog.uni-heidelberg.de/tiles/roadsg/x={x}&y={y}&z={z}', {
-            attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group @ University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group at University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }),latlng = L.latLng(43.7104876,-79.5032786);
                                         
-        //base layer objs
+        //control manu: layer options
         var baseMaps = {
             "Grayscale": grayscale,
             "Esri": Esri_WorldStreetMap,
             "OSM": osm
         };
-        //over layer objs
+        //control manu: markers options
 		var overlayMaps = {
-			"Markers": markers
+			"markers": markers
 		};
-        //intial map
+        //intial map options
 		var map = L.map('map', { 
             center: latlng, 
             minZoom: 6,
@@ -156,39 +156,144 @@
 			}
 		}
         
-        //datepicker
-        $(function () {
-                $('#datepickerfrom').datetimepicker({
-                    format: 'MM/DD/YYYY'
-                });
-                $('#datepickerto').datetimepicker({
-                    format: 'MM/DD/YYYY',
-                    useCurrent: false //Important! See issue #1075
-                });
-                $("#datepickerfrom").on("dp.change", function (e) {
-                    $('#datepickerto').data("DateTimePicker").minDate(e.date);
-                });
-                $("#datepickerto").on("dp.change", function (e) {
-                    $('#datepickerfrom').data("DateTimePicker").maxDate(e.date);
-                });
-            });
+        //bind filter button
+        $(function(){
+            $("#btnfilter").on("click", function() {
+                
+                filterList=[];//reset
+
+
+                var l =  addressPoints.length;                    
+                var compareDate, tit , p;
+                    
+                //all patients    
+                if ( $( "#opts option:selected" ).val()=='all' ){
+
+                        if (from != null || to != null){
+                            console.log('all date filter...');
+                            console.log(from);
+                            console.log(to);
+                            for ( i = 0; i < l; i++) {    
+                                p = addressPoints[i];
+                                compareDate = p['ADMITDATE'];
+                                if (compareDate != null){
+                                    titl = p['STSTUS'];
+                                    compareDate = moment(compareDate , "DD/MM/YYYY");
+                                    //console.log(compareDate);
+                                    //console.log(compareDate.isBetween(from, to));
+                                    if(compareDate.isBetween(from, to)){
+                                        var marker = L.marker(L.latLng(p['latitude'], p['longitude']), { title: tit });
+                                        marker.bindPopup(tit);
+                                        filterList.push(marker);                                        
+                                    }                                
+                                }
+                            }                             
+                        }else{
+                            console.log('all date');
+                            filterList = markerList;
+                        }
+                //discharge in
+                }else{
+
+                    if (from != null || to != null){
+                        console.log('dis date filter...');
+                        for ( i = 0; i < l; i++) {    
+                            p = addressPoints[i];
+                            compareDate = p['ADMITDATE'];
+                            titl = p['STATUS'];
+                            if (compareDate != null && titl == 'DIS IN'){
+                                compareDate = moment(compareDate , "DD/MM/YYYY");
+                                if(compareDate.isBetween(from, to)){
+                                    var dismarker = L.marker(L.latLng(p['latitude'], p['longitude']), { title: tit });
+                                    dismarker.bindPopup(tit);
+                                    filterList.push(dismarker);                                        
+                                }                                
+                            }
+                        }                              
+                    }else{
+                        console.log('count disList: ' + disList.length);
+                        filterList = disList;
+                    }
+                }                        
+                console.log('filterList: ' + filterList.length);
+                markers.clearLayers();
+                markers.addLayers(filterList);                  
+            });            
+        });
         
-        //search input constrain
-        $(document).ready(function()
-        {
-            //uncheck the checkbox when the date been selected
-            $('#datepickerfrom, #datepickerto').blur(function(e) {
-                if ( $(this).val() != "" ){
-                  $('#cb1').prop('checked', $(this).prop("checked"));
+        //datepicker initialization 
+        $(function () {
+            $('#daterange').datepicker();
+            $("#datepickerfrom").on("change", function (e) {
+                from = moment($('#datepickerfrom').val(), "DD/MM/YYYY");
+                if (!from.isValid()){
+                    from = null;
                 }
+                //console.log(from);
             });
-            //clear datapickers when box checked          
-            $('#cb1').on('click', function(e) {
-                if ( $('#cb1').is( ":checked" ) ){
-                    $('#datepickerfrom, #datepickerto').val('');
-                }
+            $("#datepickerto").on("change", function (e) {
+                to = moment($('#datepickerto').val(), "DD/MM/YYYY");
+                if (!to.isValid()){
+                    to = null;
+                }                
+                //console.log(to);
             });
         });
+        
+        
+        // //datepicker initialization 
+        // $(function () {
+        //     $('#datepickerfrom').datetimepicker({
+        //         format: 'MM/DD/YYYY'
+        //     });
+        //     $('#datepickerto').datetimepicker({
+        //         format: 'MM/DD/YYYY',
+        //         useCurrent: false //Important! See issue #1075
+        //     });
+        //     $("#datepickerfrom").on("dp.change", function (e) {
+        //         $('#datepickerto').data("DateTimePicker").minDate(e.date);
+        //         if (!e.date){
+        //             from = null
+        //         }else{
+        //             from=e.date;
+        //         }
+                
+        //     });
+        //     $("#datepickerto").on("dp.change", function (e) {
+        //         $('#datepickerfrom').data("DateTimePicker").maxDate(e.date);
+        //         if (!e.date){
+        //             to = null
+        //         }else{
+        //             to=e.date;
+        //         }
+        //     });
+        // });
+
+
+   
+        //input constrain
+        // $(function () {
+        //     uncheck the checkbox when the date been selected
+        //     $('#inputfrom, #inputto').blur(function(e) {
+        //         if ( $(this).val() != "" ){
+        //           $('#cb1').prop('checked', $(this).prop("checked"));
+        //         }
+        //     });
+        //     clear datapickers when box checked          
+        //     $('#cb1').on('click', function(e) {
+        //         if ( $('#cb1').is( ":checked" ) ){
+        //             $('#inputfrom, #inputto').val('');
+        //         }
+        //     });
+        //     $('#opts').change(function(){
+        //         var selected= $(this).val();
+        //         if ( selected='all' ){
+                     
+        //         }                
+                
+        //         console.log(data);           
+        //     });          
+        // });
     </script>
 </body>
 
