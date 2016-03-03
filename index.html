@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    
     <title>Leaflet debug page</title>
     <meta charset="utf-8" />
     <!--jquery-->
@@ -16,7 +17,7 @@
     <link rel="stylesheet" href="./dist/MarkerCluster.Default.css" />
     <script src="./dist/leaflet.markercluster-src.js"></script>
     <!-- bootstrap -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <!--moment-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.11.1/moment.min.js"></script>
@@ -26,11 +27,14 @@
     <!--bootstrap-datepicker-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.0/css/bootstrap-datepicker.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.0/js/bootstrap-datepicker.min.js"></script>
-  
+    <!--Leaflet.awesome-markers-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">    
+    <link rel="stylesheet" href="http://watson.lennardvoogdt.nl/Leaflet.awesome-markers/dist/leaflet.awesome-markers.css" />
+    <script src="http://watson.lennardvoogdt.nl/Leaflet.awesome-markers/dist/leaflet.awesome-markers.js"></script>
 
-
-
+   
 </head>
+
 
 <body>
     <div class="container">
@@ -74,13 +78,37 @@
     <script type="text/javascript">
         var progress = document.getElementById('progress');
 		var progressBar = document.getElementById('progress-bar');
-        var addressPoints = {};
+        var dishospital = {};//discharge patients geo data
+        var dishome = {};//discharge patients geo data
 		var markers = L.markerClusterGroup({ chunkedLoading: true, chunkProgress: updateProgressBar });
+        var dismarkers = new L.LayerGroup();        
 		var markerList= [];//geodata  
         var filterList= [];//geodata
         var disList= [];//geodata  
+        var dichargeList = [];
         var from, to;
-   
+        
+        //initial icons
+        var darkredIcon = L.AwesomeMarkers.icon({
+                icon: 'fa-h-square', 
+                markerColor: 'darkred', 
+                prefix: 'fa', 
+                spin:false
+            });
+        var orangeIcon = L.AwesomeMarkers.icon({
+                icon: 'fa-h-square', 
+                markerColor: 'orange', 
+                prefix: 'fa', 
+                spin:false
+            });
+        var blueIcon = L.AwesomeMarkers.icon({
+                icon: 'fa-h-square', 
+                markerColor: 'blue', 
+                prefix: 'fa', 
+                spin:false
+            });                    
+
+        //get all patients geo data 
         $.ajax({
             url: 'https://raw.githubusercontent.com/kenkaohy/json/master/PATIENT_GEO.json',
             //url: '@Url.HttpRouteUrl("API Default", new { httproute = "", controller = "PATIENT_GEO", action = "GetCoordinates" })/',
@@ -101,17 +129,67 @@
                     marker.bindPopup(title);
                     markerList.push(marker);
                     //create sub list filter by status
-                    if (status == 'DIS IN'){
+                    if (status == 'DIS IN') {
                         var dis = L.marker(L.latLng(a['latitude'], a['longitude']), { title: title });
                         dis.bindPopup(title);
-                        disList.push(dis);                        
+                        disList.push(dis);
                     }
 		      }  
             markers.addLayers(markerList);         
 		    //map.addLayer(markers);
         });
-            
-        //initial map layers
+        
+        //get geo data of discharge from hospital
+        $.ajax({
+            url: 'https://raw.githubusercontent.com/kenkaohy/json/master/DISHOSPITAL.json',
+            //url: '@Url.HttpRouteUrl("API Default", new { httproute = "", controller = "PATIENT_GEO", action = "GetHospitalDisCoor" })/'+from +'|'+to,
+            type: 'GET',
+            dataType: 'json',
+            data: {format: 'json'},
+            success: function(geodata) {
+                dishospital = geodata;
+                console.log(dishospital);
+            }
+        }).done(function(){
+            var l = dishospital.length;
+            var lat, long;
+            for (var i = 0; i < l; i++) {
+                var h = dishospital[i];
+                var title = h['DISHOSPITAL'] + "<br />" + h['DCOUNT'] ;
+                var lat = h['D_LAT'];
+                var long = h['D_LONG'];
+                var count = h['DCOUNT'];
+                if(lat!=null && long!=null ){
+                    
+                    if (count < 10){
+                        L.marker(L.latLng(h['D_LAT'], h['D_LONG']), {icon: blueIcon},  { title: title }).bindPopup(title).addTo(dismarkers);
+                    }else if(count >=10 && count <100){
+                        L.marker(L.latLng(h['D_LAT'], h['D_LONG']), {icon: orangeIcon},  { title: title }).bindPopup(title).addTo(dismarkers);
+                    }else{
+                        L.marker(L.latLng(h['D_LAT'], h['D_LONG']), {icon: darkredIcon},  { title: title }).bindPopup(title).addTo(dismarkers);
+                    }
+
+                }        
+            }
+        });
+        
+        //get geo data of discharge from home
+        $.ajax({
+            url: 'https://raw.githubusercontent.com/kenkaohy/json/master/DISHOME.json',
+            //url: '@Url.HttpRouteUrl("API Default", new { httproute = "", controller = "PATIENT_GEO", action = "GetCoordinates" })/',
+            type: 'GET',
+            dataType: 'json',
+            data: {format: 'json'},
+            success: function(geodata) {
+                dishome = geodata;
+                //console.log(dishome);
+            }
+        }).done(function(){
+            var len = dishome.length;
+
+        });
+                  
+        //initial title layers
 		var osm = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
         }),latlng = L.latLng(43.7104876,-79.5032786);
@@ -121,16 +199,17 @@
         var grayscale = L.tileLayer('http://korona.geog.uni-heidelberg.de/tiles/roadsg/x={x}&y={y}&z={z}', {
             attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group at University of Heidelberg</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }),latlng = L.latLng(43.7104876,-79.5032786);
-                                        
-        //control manu: layer options
+                                          
+        //control manu: title layers
         var baseMaps = {
             "Grayscale": grayscale,
             "Esri": Esri_WorldStreetMap,
             "OSM": osm
         };
-        //control manu: markers options
+        //control manu: markers layers
 		var overlayMaps = {
-			"markers": markers
+			"All": markers,
+            "Discharge": dismarkers
 		};
         //intial map options
 		var map = L.map('map', { 
@@ -138,7 +217,7 @@
             minZoom: 6,
             maxZoom: 14,
             zoom: 11, 
-            layers: [osm, markers]
+            layers: [osm, dismarkers]
         });        
         //Create layer control       
         L.control.layers(baseMaps, overlayMaps).addTo(map);
@@ -159,10 +238,7 @@
         //bind filter button
         $(function(){
             $("#btnfilter").on("click", function() {
-                
                 filterList=[];//reset
-
-
                 var l =  addressPoints.length;                    
                 var compareDate, tit , p;
                     
@@ -294,6 +370,7 @@
         //         console.log(data);           
         //     });          
         // });
+
     </script>
 </body>
 
