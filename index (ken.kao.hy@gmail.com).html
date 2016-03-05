@@ -139,8 +139,8 @@
 		    //map.addLayer(markers);
         });
         
-        //drew discharge marker layer
-        drewDischargeLayer('no', 'no');
+        //drew discharge mmarker layer
+        drewDischargeLayer(from, to);
         
         //get geo data of discharge from home
         $.ajax({
@@ -177,7 +177,7 @@
         };
         //control manu: markers layers
 		var overlayMaps = {
-			"Patient address": markers,
+			"All patient": markers,
             "Discharge hospital": dismarkers
 		};
         //intial map options
@@ -219,14 +219,16 @@
                 if ( $( "#opts option:selected" ).val()=='all' ){
 
                         if (from != null || to != null){
-                            console.log('all date filter...');
+                            //console.log('all date filter...');
                             for ( i = 0; i < l; i++) {    
                                 p = addressPoints[i];
                                 compareDate = p['ADMITDATE'];
                                 if (compareDate != null){
                                     titl = p['STSTUS'];
-                                    compareDate = moment(compareDate);
-                                    if(moment(compareDate).isAfter(from) && moment(compareDate).isBefore(to) ){
+                                    compareDate = moment(compareDate , "DD/MM/YYYY");
+                                    //console.log(compareDate);
+                                    //console.log(compareDate.isBetween(from, to));
+                                    if(compareDate.isBetween(from, to)){
                                         var marker = L.marker(L.latLng(p['latitude'], p['longitude']), { title: tit });
                                         marker.bindPopup(tit);
                                         filterList.push(marker);                                        
@@ -241,14 +243,14 @@
                 }else{
 
                     if (from != null || to != null){
-                        console.log('dis date filter...');
+                        //console.log('dis date filter...');
                         for ( i = 0; i < l; i++) {    
                             p = addressPoints[i];
                             compareDate = p['ADMITDATE'];
                             titl = p['STATUS'];
                             if (compareDate != null && titl == 'DIS IN'){
-                                compareDate = moment(compareDate);
-                                if(moment(compareDate).isAfter(from) && moment(compareDate).isBefore(to) ){
+                                compareDate = moment(compareDate , "DD/MM/YYYY");
+                                if(compareDate.isBetween(from, to)){
                                     var dismarker = L.marker(L.latLng(p['latitude'], p['longitude']), { title: tit });
                                     dismarker.bindPopup(tit);
                                     filterList.push(dismarker);                                        
@@ -268,18 +270,9 @@
                 
         //drew discharge markers
 		function drewDischargeLayer(from, to) {
-            var strfrom, strto;
-            if (from == 'no' || from == null){
-                strfrom = '2004-01-01';  
-            }else{
-                strfrom = moment(from).format('YYYY-MM-DD');             
-            }  
-            if (to == 'no' || to == null){
-                strto =  moment().format('YYYY-MM-DD');
-            }else{
-                strto =  moment(to).format('YYYY-MM-DD');                
-            }      
-                               
+            var strfrom = moment(from).format('YYYY-MM-DD');
+            var strto =  moment(to).format('YYYY-MM-DD');
+            
             console.log(strfrom);
             console.log(strto);
 
@@ -298,12 +291,9 @@
             }).done(function(){
                 var l = dishospital.length;
                 var lat, long;
-                console.log('dishospital.length: ' + dishospital.length);
-                dismarkers.clearLayers();
-                
                 for (var i = 0; i < l; i++) {
                     var h = dishospital[i];
-                    var title = h['DISHOSPITAL'] + "<br /> Discharge count:" + h['DCOUNT'] ;
+                    var title = h['DISHOSPITAL'] + "<br />" + h['DCOUNT'] ;
                     var lat = h['D_LAT'];
                     var long = h['D_LONG'];
                     var count = h['DCOUNT'];
